@@ -1,0 +1,212 @@
+﻿Type `help' to learn how to use Xshell prompt.
+[C:\~]$ 
+
+Connecting to 192.168.56.101:22...
+Connection established.
+To escape to local shell, press 'Ctrl+Alt+]'.
+
+Last login: Mon Nov 18 17:23:52 2019 from desktop-dmteu3r
+[weblogic@haproxy1 ~]$ java -version
+java version "1.8.0_201"
+Java(TM) SE Runtime Environment (build 1.8.0_201-b09)
+Java HotSpot(TM) 64-Bit Server VM (build 25.201-b09, mixed mode)
+[weblogic@haproxy1 ~]$ 
+[weblogic@haproxy1 ~]$ 
+[weblogic@haproxy1 ~]$ 
+[weblogic@haproxy1 ~]$ ls
+jdk1.8.0_201  jdk-8u201-linux-x64.tar.gz
+[weblogic@haproxy1 ~]$ mkdir certificate
+[weblogic@haproxy1 ~]$ cd certificate/
+[weblogic@haproxy1 certificate]$ mkdir ca  client  server
+[weblogic@haproxy1 certificate]$ ls
+ca  client  server
+第一步：
+[weblogic@haproxy1 certificate]$ openssl  genrsa -out ca/ca-key.pem 1024 
+Generating RSA private key, 1024 bit long modulus
+................................................++++++
+............................................................++++++
+e is 65537 (0x10001)
+[weblogic@haproxy1 certificate]$ ls ca
+ca-key.pem
+第二步：
+[weblogic@haproxy1 certificate]$ openssl req -new -out ca/ca-req.csr -key ca/ca-key.pem 
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [XX]:CN
+State or Province Name (full name) []:HN
+Locality Name (eg, city) [Default City]:CS
+Organization Name (eg, company) [Default Company Ltd]:ZDPH
+Organizational Unit Name (eg, section) []:YANFA
+Common Name (eg, your name or your server's hostname) []:cms-mmwp-web06   我的 trawms-web
+Email Address []:
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:    
+An optional company name []: 
+[weblogic@haproxy1 certificate]$ ls ca
+ca-key.pem  ca-req.csr
+第三步：
+[weblogic@haproxy1 certificate]$ openssl x509 -req -in ca/ca-req.csr -out ca/ca-cert.pem -signkey ca/ca-key.pem -days 3650
+Signature ok
+subject=/C=CN/ST=HN/L=CS/O=ZDPH/OU=YANFA/CN=cms-mmwp-web06
+Getting Private key
+[weblogic@haproxy1 certificate]$ ls ca
+ca-cert.pem  ca-key.pem  ca-req.csr
+第四步：
+[weblogic@haproxy1 certificate]$ keytool -genkey -alias trawms -validity 365 -keyalg RSA -keysize 1024 -keypass 123456 -storepass 123456 -keystore server/trawms.jks
+您的名字与姓氏是什么?
+  [Unknown]:  cms-mmwp-web06
+您的组织单位名称是什么?
+  [Unknown]:  ZDPH
+您的组织名称是什么?
+  [Unknown]:  YANFA
+您所在的城市或区域名称是什么?
+  [Unknown]:  SH
+您所在的省/市/自治区名称是什么?
+  [Unknown]:  SH
+该单位的双字母国家/地区代码是什么?
+  [Unknown]:  CN
+CN=cms-mmwp-web06, OU=ZDPH, O=YANFA, L=CS, ST=HN, C=CN是否正确?
+  [否]:  是
+
+
+Warning:
+JKS 密钥库使用专用格式。建议使用 "keytool -importkeystore -srckeystore server/aqcp.jks -destkeystore server/aqcp.jks -deststoretype pkcs12" 迁移到行业标准格式 PKCS12。
+[weblogic@haproxy1 certificate]$ ls server/
+aqcp.jks
+第五步：
+[weblogic@haproxy1 certificate]$ keytool -certreq -alias trawms -sigalg MD5withRSA -file server/trawms.csr -keypass 123456 -keystore server/trawms.jks -storepass 123456
+
+Warning:
+生成的证书请求 使用的 MD5withRSA 签名算法存在安全风险。
+JKS 密钥库使用专用格式。建议使用 "keytool -importkeystore -srckeystore server/aqcp.jks -destkeystore server/aqcp.jks -deststoretype pkcs12" 迁移到行业标准格式 PKCS12。
+[weblogic@haproxy1 certificate]$ ls server/
+aqcp.csr  aqcp.jks
+第六步：
+[weblogic@haproxy1 certificate]$ openssl x509 -req -in server/trawms.csr -out server/trawms.pem -CA ca/ca-cert.pem -CAkey ca/ca-key.pem -days 3650 -set_serial 1
+Signature ok
+subject=/C=CN/ST=HN/L=CS/O=YANFA/OU=ZDPH/CN=cms-mmwp-web06
+Getting CA Private Key
+第七步：
+[weblogic@haproxy1 certificate]$ keytool -import -v -trustcacerts -keypass 123456 -storepass 123456 -alias root -file ca/ca-cert.pem -keystore server/trawms.jks
+所有者: CN=cms-mmwp-web06, OU=YANFA, O=ZDPH, L=CS, ST=HN, C=CN
+发布者: CN=cms-mmwp-web06, OU=YANFA, O=ZDPH, L=CS, ST=HN, C=CN
+序列号: 89309c471abfc9a4
+有效期为 Mon Nov 18 17:37:28 CST 2019 至 Thu Nov 15 17:37:28 CST 2029
+证书指纹:
+	 MD5:  8B:04:1D:9D:81:16:FF:21:FB:C3:2C:31:C1:0F:D6:B1
+	 SHA1: FA:64:3A:41:A1:43:BB:B4:AD:5E:AC:B9:7F:D5:51:FD:BA:23:9F:F8
+	 SHA256: 3A:DB:63:E2:5C:B7:51:FA:0B:E9:55:5D:3F:C4:02:A8:2B:AA:47:C5:44:43:4B:CA:1B:76:D7:85:05:0F:F0:0D
+签名算法名称: SHA1withRSA
+主体公共密钥算法: 1024 位 RSA 密钥
+版本: 1
+是否信任此证书? [否]:  是   	
+证书已添加到密钥库中
+[正在存储server/aqcp.jks]
+
+Warning:
+JKS 密钥库使用专用格式。建议使用 "keytool -importkeystore -srckeystore server/aqcp.jks -destkeystore server/aqcp.jks -deststoretype pkcs12" 迁移到行业标准格式 PKCS12。
+[weblogic@haproxy1 certificate]$ ls ca
+ca-cert.pem  ca-key.pem  ca-req.csr
+[weblogic@haproxy1 certificate]$ ls server/
+aqcp.csr  aqcp.jks  aqcp.pem
+[weblogic@haproxy1 certificate]$ ls client/
+第八步：
+[weblogic@haproxy1 certificate]$ keytool -import -v -trustcacerts -storepass 123456 -alias sso -file server/trawms.pem -keystore server/trawms.jks 
+证书已添加到密钥库中
+[正在存储server/aqcp.jks]
+
+Warning:
+JKS 密钥库使用专用格式。建议使用 "keytool -importkeystore -srckeystore server/aqcp.jks -destkeystore server/aqcp.jks -deststoretype pkcs12" 迁移到行业标准格式 PKCS12。
+第九步：
+[weblogic@haproxy1 certificate]$ keytool -import -alias trawms -trustcacerts -file ca/ca-cert.pem -keystore server/trawmstrust.jks
+输入密钥库口令:  
+再次输入新口令: 
+所有者: CN=cms-mmwp-web06, OU=YANFA, O=ZDPH, L=CS, ST=HN, C=CN
+发布者: CN=cms-mmwp-web06, OU=YANFA, O=ZDPH, L=CS, ST=HN, C=CN
+序列号: 89309c471abfc9a4
+有效期为 Mon Nov 18 17:37:28 CST 2019 至 Thu Nov 15 17:37:28 CST 2029
+证书指纹:
+	 MD5:  8B:04:1D:9D:81:16:FF:21:FB:C3:2C:31:C1:0F:D6:B1
+	 SHA1: FA:64:3A:41:A1:43:BB:B4:AD:5E:AC:B9:7F:D5:51:FD:BA:23:9F:F8
+	 SHA256: 3A:DB:63:E2:5C:B7:51:FA:0B:E9:55:5D:3F:C4:02:A8:2B:AA:47:C5:44:43:4B:CA:1B:76:D7:85:05:0F:F0:0D
+签名算法名称: SHA1withRSA
+主体公共密钥算法: 1024 位 RSA 密钥
+版本: 1
+是否信任此证书? [否]:  是                                          
+证书已添加到密钥库中
+第十步：
+[weblogic@haproxy1 certificate]$ openssl genrsa -out client/user-key.pem 1024
+Generating RSA private key, 1024 bit long modulus
+..++++++
+...................++++++
+e is 65537 (0x10001)
+第十一步：
+[weblogic@haproxy1 certificate]$ openssl req -new -out client/user-req.csr -key client/user-key.pem
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [XX]:CN
+State or Province Name (full name) []:HN
+Locality Name (eg, city) [Default City]:CS
+Organization Name (eg, company) [Default Company Ltd]:ZDPH
+Organizational Unit Name (eg, section) []:YANFA
+Common Name (eg, your name or your server's hostname) []:cms-mmwp-web06
+Email Address []:
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:
+An optional company name []:
+第十二步：
+[weblogic@haproxy1 certificate]$ openssl x509 -req -in client/user-req.csr -out client/user-cert.pem -signkey client/user-key.pem -CA ca/ca-cert.pem -CAkey ca/ca-key.pem -CAcreateserial -days 3650
+Signature ok
+subject=/C=CN/ST=HN/L=CS/O=ZDPH/OU=YANFA/CN=cms-mmwp-web06
+Getting Private key
+Getting CA Private Key
+第十三步：
+[weblogic@haproxy1 certificate]$ openssl pkcs12 -export -clcerts -in client/user-cert.pem -inkey client/user-key.pem -out client/user.p12
+Enter Export Password:
+Verifying - Enter Export Password:
+第十四步：
+[weblogic@haproxy1 certificate]$ keytool -import -alias user -trustcacerts -file client/user-cert.pem -keystore server/trawmstrust.jks
+输入密钥库口令:  
+证书已添加到密钥库中
+[weblogic@haproxy1 certificate]$ ls client/
+user-cert.pem  user-key.pem  user.p12  user-req.csr
+[weblogic@haproxy1 server]$ cd ../ca/
+[weblogic@haproxy1 ca]$ ls
+ca-cert.pem  ca-cert.srl  ca-key.pem  ca-req.csr
+第十五步：
+[weblogic@haproxy1 ca]$ cp ca-cert.pem ca-cert.cer
+[weblogic@haproxy1 ca]$ ls
+ca-cert.cer  ca-cert.pem  ca-cert.srl  ca-key.pem  ca-req.csr
+[weblogic@haproxy1 ca]$ sz ca-cert.cer 
+[weblogic@haproxy1 ca]$ 
+
+[weblogic@haproxy1 ca]$ cd ../client/
+[weblogic@haproxy1 client]$ ls
+user-cert.pem  user-key.pem  user.p12  user-req.csr
+[weblogic@haproxy1 client]$ sz user.p12 
+
+[weblogic@haproxy1 client]$ 
+第十六步：
+[weblogic@haproxy1 client]$ cd ../server/
+[weblogic@haproxy1 server]$ ls
+aqcp.csr  aqcp.jks  aqcp.pem  aqcptrust.jks
+[weblogic@haproxy1 server]$ cp aqcp.jks aqcptrust.jks /home/weblogic/Oracle/Middleware/user_projects/domains/base_domain/
+
+
+注意：上述sz命令下载了 ca-cert.cer user.p12 证书，这两个证书要安装在手信任的根
+证书里面。
+
